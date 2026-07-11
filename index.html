@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michi Method Print Optimizer</title>
+    <meta name="description" content="Optimize image placement on Letter, Legal, or A4 paper using the Michi Method Size Guide. Crop, zoom, queue, and generate printable PDFs instantly.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- jsPDF via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="dark-mode">
+    <!-- Global Pop-up Warning Toast -->
+    <div id="warning-toast" class="toast-warning">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span>won't fit on regular paper!</span>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <i class="fa-solid fa-print logo-icon"></i>
+                <div class="logo-text">
+                    <h1>Michi Method</h1>
+                    <span>Print Layout Optimizer</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
+                    <i class="fa-solid fa-sun"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Layout -->
+        <main class="app-main">
+            <!-- COLUMN 1: Assets & Dimensions Selection (Left) -->
+            <section class="panel panel-config">
+                <div class="panel-header">
+                    <h2><span class="step-num">1</span> Assets & Sizes</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- Drop Zone -->
+                    <div id="drop-zone" class="drop-zone">
+                        <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+                        <p class="drop-text">Drag & drop image or <span>browse</span></p>
+                        <input type="file" id="file-input" accept="image/*" class="file-input">
+                    </div>
+
+                    <!-- Local Sample Images Gallery -->
+                    <div class="gallery-container">
+                        <label class="section-label">Select Workspace Image</label>
+                        <div id="local-gallery" class="local-gallery">
+                            <!-- Populated dynamically via JS -->
+                            <div class="gallery-loader">Loading workspace files...</div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Visual Grid Selector -->
+                    <div class="size-selector-wrapper">
+                        <div class="section-label-row">
+                            <label class="section-label">Select Output Size</label>
+                            <button id="view-guide-btn" class="text-link-btn"><i class="fa-solid fa-image"></i> View Guide</button>
+                        </div>
+                        
+                        <div class="grid-selector-container">
+                            <div id="interactive-grid" class="interactive-grid">
+                                <!-- Row 1: Pink (Horizontal) -->
+                                <div class="grid-cell pink-cell" data-col="1" data-row="1" title="1x1 (2.75&quot; x 3.75&quot;)"></div>
+                                <div class="grid-cell pink-cell" data-col="2" data-row="1" title="2x1 (5.50&quot; x 3.75&quot;)"></div>
+                                <div class="grid-cell pink-cell" data-col="3" data-row="1" title="3x1 (8.25&quot; x 3.75&quot;)"></div>
+                                <div class="grid-cell pink-cell" data-col="4" data-row="1" title="4x1 (11.00&quot; x 3.75&quot;)"></div>
+                                
+                                <!-- Row 2: Blue (Medium) -->
+                                <div class="grid-cell blue-cell" data-col="1" data-row="2" title="1x2 (2.75&quot; x 7.50&quot;)"></div>
+                                <div class="grid-cell blue-cell" data-col="2" data-row="2" title="2x2 (5.50&quot; x 7.50&quot;)"></div>
+                                <div class="grid-cell blue-cell" data-col="3" data-row="2" title="3x2 (8.25&quot; x 7.50&quot;)"></div>
+                                <div class="grid-cell blue-cell" data-col="4" data-row="2" title="4x2 (11.00&quot; x 7.50&quot;)"></div>
+                                
+                                <!-- Row 3: Yellow (Tall) -->
+                                <div class="grid-cell yellow-cell" data-col="1" data-row="3" title="1x3 (2.75&quot; x 11.25&quot;)"></div>
+                                <div class="grid-cell yellow-cell" data-col="2" data-row="3" title="2x3 (5.50&quot; x 11.25&quot;)"></div>
+                                <div class="grid-cell yellow-cell" data-col="3" data-row="3" title="3x3 (8.25&quot; x 11.25&quot;)"></div>
+                                <div class="grid-cell yellow-cell" data-col="4" data-row="3" title="4x3 (11.00&quot; x 11.25&quot;)"></div>
+                            </div>
+                            
+                            <!-- Active Size Readout -->
+                            <div id="size-readout" class="size-readout">
+                                <span id="readout-name" class="readout-name">1x1 Slot</span>
+                                <span id="readout-dims" class="readout-dims">2.75" x 3.75" (7 x 9.5 cm)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COLUMN 2: Workspace Editor (Center) -->
+            <section class="panel panel-editor">
+                <div class="panel-header">
+                    <h2><span class="step-num">2</span> Crop & Frame</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <div id="cropper-workspace" class="cropper-workspace">
+                        <!-- Info Help Banner -->
+                        <div id="crop-help-banner" class="crop-help-banner hidden">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Drag image to position. Scroll to zoom. Only the area inside the outline will print.</span>
+                        </div>
+
+                        <!-- Crop Container -->
+                        <div id="crop-container" class="crop-container">
+                            <div id="crop-placeholder-msg" class="crop-placeholder-msg">
+                                <i class="fa-solid fa-crop-simple placeholder-icon pulse-icon"></i>
+                                <h3>Interactive Crop Board</h3>
+                                <p>Select an image from the sidebar gallery or upload a file to begin cropping.</p>
+                            </div>
+                            <img id="crop-image" src="" alt="Cropping image" draggable="false" class="hidden">
+                            <div id="crop-overlay-wrapper" class="crop-overlay-wrapper hidden">
+                                <!-- SVG overlay cutout will be updated here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Cropper Controls -->
+                        <div id="cropper-controls" class="cropper-controls hidden">
+                            <div class="control-row">
+                                <span class="control-icon" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></span>
+                                <input type="range" id="zoom-slider" min="0.1" max="4" step="0.001" value="1">
+                                <span class="control-icon" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+                            </div>
+                            <div class="control-buttons">
+                                <button id="rotate-crop-btn" class="secondary-btn" title="Swap Crop Orientation (Rotate 90°)">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Swap Orientation
+                                </button>
+                                <button id="reset-crop-btn" class="secondary-btn" title="Reset Zoom & Pan">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i> Reset Center
+                                </button>
+                                <button id="cancel-crop-btn" class="danger-btn" title="Clear Editor and Image">
+                                    <i class="fa-solid fa-xmark"></i> Clear Editor
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add to Queue Bar -->
+                        <div id="queue-form-row" class="queue-form-row hidden">
+                            <div class="quantity-input-group">
+                                <label for="quantity-input">Quantity:</label>
+                                <div class="number-stepper">
+                                    <button type="button" class="stepper-btn minus-btn">-</button>
+                                    <input type="number" id="quantity-input" min="1" max="99" value="1">
+                                    <button type="button" class="stepper-btn plus-btn">+</button>
+                                </div>
+                            </div>
+                            <button id="add-to-queue-btn" class="primary-btn pulse-button">
+                                <i class="fa-solid fa-plus"></i> Add to Print Queue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COLUMN 3: Settings & Queue List (Right) -->
+            <section class="panel panel-preview">
+                <div class="panel-header">
+                    <h2><span class="step-num">3</span> Print Queue & Settings</h2>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- Global Print settings -->
+                    <div class="settings-group">
+                        <div class="setting-grid">
+                            <div class="setting-item">
+                                <span class="setting-title">Paper Size</span>
+                                <div class="select-wrapper">
+                                    <select id="paper-size-select">
+                                        <option value="letter" selected>Letter (8.5" x 11")</option>
+                                        <option value="legal">Legal (8.5" x 14")</option>
+                                        <option value="a4">A4 (8.27" x 11.69")</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="slider-header">
+                                    <span class="setting-title">Margins</span>
+                                    <span id="margin-val" class="setting-value">0.25"</span>
+                                </div>
+                                <input type="range" id="margin-slider" min="0" max="0.75" step="0.05" value="0.25">
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="slider-header">
+                                    <span class="setting-title">Spacing</span>
+                                    <span id="spacing-val" class="setting-value">0.10"</span>
+                                </div>
+                                <input type="range" id="spacing-slider" min="0" max="0.5" step="0.05" value="0.10">
+                            </div>
+                        </div>
+
+                        <div class="settings-toggles">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="auto-rotate-checkbox" checked>
+                                <span class="checkmark"></span>
+                                <div class="checkbox-text">
+                                    <span class="checkbox-title">Auto-Rotate Placement</span>
+                                </div>
+                            </label>
+
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="cut-marks-checkbox" checked>
+                                <span class="checkmark"></span>
+                                <div class="checkbox-text">
+                                    <span class="checkbox-title">Cut Guidelines</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Print Queue Container -->
+                    <div class="queue-container">
+                        <div class="section-label-row">
+                            <label class="section-label">Queued Printables</label>
+                            <span id="queue-badge" class="badge">0</span>
+                        </div>
+
+                        <div id="queue-scroll-area" class="queue-scroll-area">
+                            <div id="queue-empty" class="queue-empty">
+                                <i class="fa-solid fa-list-ul empty-icon"></i>
+                                <p>Your queue is empty. Crop an image and click "Add to Print Queue" above.</p>
+                            </div>
+
+                            <div id="queue-items" class="queue-items hidden">
+                                <!-- Dynamic rows populated via JS -->
+                            </div>
+                        </div>
+
+                        <div id="queue-actions" class="queue-actions hidden">
+                            <button id="clear-queue-btn" class="danger-btn">
+                                <i class="fa-solid fa-trash-can"></i> Clear Queue
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Final Action -->
+                    <div class="download-container">
+                        <button id="download-pdf-btn" class="download-btn disabled" disabled>
+                            <i class="fa-solid fa-file-pdf"></i> Generate & Download PDF
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Size Guide Image Modal -->
+    <div id="guide-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3>Michi Method Size Guide</h3>
+            <div class="modal-img-container">
+                <img src="mioche method.png" alt="Michi Method Size Chart">
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
