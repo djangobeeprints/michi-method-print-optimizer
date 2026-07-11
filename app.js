@@ -14,12 +14,15 @@ let scale = 1.0;
 let pan = { x: 0, y: 0 };
 let currentHole = { x: 0, y: 0, w: 0, h: 0 };
 let pages = []; // Result of bin packing
+let uploadedGalleryItems = []; // { id, name, src } for user-uploaded images, kept for re-cropping
 
 // DOM Elements
 const themeToggle = document.getElementById('theme-toggle');
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const localGallery = document.getElementById('local-gallery');
+const galleryBadge = document.getElementById('gallery-badge');
+const galleryEmptyMsg = document.getElementById('gallery-empty-msg');
 
 // Interactive Size Grid Elements
 const interactiveGrid = document.getElementById('interactive-grid');
@@ -76,8 +79,8 @@ function init() {
     setupSettingsListeners();
     setupQueueActions();
     setupModal();
-    loadLocalFiles();
-    
+    renderLocalGallery();
+
     // Select the first grid card (1x1) by default
     triggerGridSelect(1, 1);
     
@@ -183,62 +186,51 @@ function setupThemeToggle() {
     });
 }
 
-// 2. Load Workspace Images Gallery
-async function loadLocalFiles() {
-    try {
-        const response = await fetch('.');
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const links = Array.from(doc.querySelectorAll('a'));
-        
-        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-        const imageFiles = links
-            .map(link => link.getAttribute('href'))
-            .filter(href => href && 
-                            imageExtensions.some(ext => href.toLowerCase().endsWith(ext)) && 
-                            href !== 'mioche method.png' &&
-                            !href.startsWith('.'));
-        
-        if (imageFiles.length > 0) {
-            renderLocalGallery(imageFiles);
-        } else {
-            throw new Error("No image files found in listing");
-        }
-    } catch (err) {
-        console.warn("Could not list local files via server (no directory listing available).", err);
-        renderLocalGallery([]);
-    }
-}
-
-function renderLocalGallery(files) {
+// 2. Render Uploaded Workspace Images Gallery
+function renderLocalGallery() {
     localGallery.innerHTML = '';
 
-    if (files.length === 0) {
-        localGallery.innerHTML = '<div class="gallery-loader">No sample images available. Drag & drop or browse to upload your own.</div>';
+    if (uploadedGalleryItems.length === 0) {
+        localGallery.classList.add('hidden');
+        galleryEmptyMsg.classList.remove('hidden');
+        galleryBadge.classList.add('hidden');
         return;
     }
 
-    files.forEach(filename => {
-        const item = document.createElement('div');
-        item.className = 'gallery-item';
-        item.title = filename;
-        
-        const img = document.createElement('img');
-        img.src = filename;
-        img.alt = filename;
-        img.loading = 'lazy';
-        
-        item.appendChild(img);
-        
-        item.addEventListener('click', () => {
-            document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
-            item.classList.add('selected');
-            imageName = filename.split('/').pop().split('.').shift();
-            loadNewImage(filename);
-        });
-        
-        localGallery.appendChild(item);
+    galleryEmptyMsg.classList.add('hidden');
+    localGallery.classList.remove('hidden');
+    galleryBadge.classList.remove('hidden');
+    galleryBadge.textContent = uploadedGalleryItems.length;
+
+    uploadedGalleryItems.forEach(entry => {
+        localGallery.appendChild(buildGalleryItem(entry.id, entry.name, entry.src));
+    });
+}
+
+function buildGalleryItem(itemId, name, src) {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.dataset.itemId = itemId;
+    item.title = name;
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = name;
+    img.loading = 'lazy';
+    item.appendChild(img);
+
+    item.addEventListener('click', () => {
+        selectGalleryItem(itemId);
+        imageName = name.split('/').pop().split('.').shift();
+        loadNewImage(src);
+    });
+
+    return item;
+}
+
+function selectGalleryItem(itemId) {
+    document.querySelectorAll('.gallery-item').forEach(el => {
+        el.classList.toggle('selected', el.dataset.itemId === String(itemId));
     });
 }
 
@@ -276,12 +268,16 @@ function handleUploadedFile(file) {
         alert('Please drop an image file.');
         return;
     }
-    
-    document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
-    imageName = file.name.split('.').shift();
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
+        const itemId = 'upload_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        uploadedGalleryItems.unshift({ id: itemId, name: file.name, src: e.target.result });
+
+        renderLocalGallery();
+        selectGalleryItem(itemId);
+
+        imageName = file.name.split('.').shift();
         loadNewImage(e.target.result);
     };
     reader.readAsDataURL(file);

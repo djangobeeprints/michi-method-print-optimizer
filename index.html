@@ -56,13 +56,16 @@
                         <input type="file" id="file-input" accept="image/*" class="file-input">
                     </div>
 
-                    <!-- Local Sample Images Gallery -->
+                    <!-- Uploaded Workspace Images Gallery -->
                     <div class="gallery-container">
-                        <label class="section-label">Select Workspace Image</label>
-                        <div id="local-gallery" class="local-gallery">
-                            <!-- Populated dynamically via JS -->
-                            <div class="gallery-loader">Loading workspace files...</div>
+                        <div class="section-label-row">
+                            <label class="section-label">Select Workspace Image</label>
+                            <span id="gallery-badge" class="badge hidden">0</span>
                         </div>
+                        <div id="local-gallery" class="local-gallery hidden">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                        <p id="gallery-empty-msg" class="gallery-empty-msg">Upload an image above — it'll appear here so you can select it again for a different crop.</p>
                     </div>
 
                     <!-- Interactive Visual Grid Selector -->

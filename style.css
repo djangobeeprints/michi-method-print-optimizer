@@ -297,11 +297,18 @@ body.light-mode ::-webkit-scrollbar-thumb {
 
 .local-gallery {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    max-height: 140px;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px;
+    max-height: 200px;
     overflow-y: auto;
-    padding-right: 4px;
+    padding: 2px 4px 2px 2px;
+}
+
+.gallery-empty-msg {
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text-tertiary);
+    padding: 10px 2px;
 }
 
 .gallery-item {
