@@ -206,21 +206,19 @@ async function loadLocalFiles() {
             throw new Error("No image files found in listing");
         }
     } catch (err) {
-        console.warn("Could not list local files via server. Using fallback hardcoded list.", err);
-        const fallbackImages = [
-            "1637.jpg", "1641.jpg", "1644.jpg", "1647.jpg", "1909.jpg",
-            "1910.jpg", "1911.jpg", "1912.jpg", "1913.jpg", "1914.jpg",
-            "1915.jpg", "1921.jpg", "1925.jpg", "1926.jpg", "1927.jpg",
-            "1928.jpg", "1929.jpg", "1930.jpg", "1932.png", "1933.png",
-            "1934.jpg", "1936.jpg", "2071.webp", "2072.jpg"
-        ];
-        renderLocalGallery(fallbackImages);
+        console.warn("Could not list local files via server (no directory listing available).", err);
+        renderLocalGallery([]);
     }
 }
 
 function renderLocalGallery(files) {
     localGallery.innerHTML = '';
-    
+
+    if (files.length === 0) {
+        localGallery.innerHTML = '<div class="gallery-loader">No sample images available. Drag & drop or browse to upload your own.</div>';
+        return;
+    }
+
     files.forEach(filename => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
